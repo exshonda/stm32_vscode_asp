@@ -22,6 +22,13 @@
 #define core_int_entry				_kernel_core_int_entry
 
 /*
+ *  core_kernel_impl.h
+ */
+#define lock_cpu					_kernel_lock_cpu
+#define unlock_cpu					_kernel_unlock_cpu
+#define sense_lock					_kernel_sense_lock
+
+/*
  *  core_support.S
  */
 #define core_exc_entry				_kernel_core_exc_entry

@@ -57,7 +57,7 @@
 /*
  *  割込み優先度のビット幅(core_sil.hで参照するためここで定義)
  */
-#define TBITW_IPRI     3
+#define TBITW_IPRI     4
 
 /*
  *  プロセッサで共通な定義 

@@ -23,6 +23,13 @@
 #undef core_int_entry
 
 /*
+ *  core_kernel_impl.h
+ */
+#undef lock_cpu
+#undef unlock_cpu
+#undef sense_lock
+
+/*
  *  core_support.S
  */
 #undef core_exc_entry

@@ -2,6 +2,7 @@ PACKAGE stm32cubemx_gcc
 
 E_PACKAGE
 Makefile.target
+MANIFEST
 stm32cubemx.h
 target_asm.inc
 target_cfg1_out.h

@@ -49,6 +49,11 @@
 #ifndef TOPPERS_TARGET_KERNEL_H
 #define TOPPERS_TARGET_KERNEL_H
 
+/*
+ *  割込み数
+ */
+#define TMAX_INTNO (131 + 16)
+
 #ifdef USE_TIM_AS_HRT
 
 /*

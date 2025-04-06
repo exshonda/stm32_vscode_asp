@@ -251,6 +251,12 @@ TOPPERS_ASM_MACRO を条件コンパイルの条件として用いること．
 
 
 (8) バージョン履歴
+2023/6/11
+・core_rename.def
+ ・core_kernel_impl.h のシンボルの追加ミスの修正
+・core_kernel_impl.h
+ ・割込要求有りのときにtrueではなく0以外を返していたため修正．
+
 2023/3/1
 ・ASP3.6.0に追従
 ・core_support.S

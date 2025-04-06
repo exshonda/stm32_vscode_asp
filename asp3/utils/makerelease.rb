@@ -185,6 +185,18 @@ fileListStr = $fileList.join(" ")
 command = "tar cvfz RELEASE/#{archiveName} -C .. #{fileListStr}";
 system(command)
 puts("== RELEASE/#{archiveName} is generated. ==")
+command = "tar xvfz RELEASE/#{archiveName} -C RELEASE";
+system(command)
+archive_zipname = $package + "-" + $version + ".zip";
+archive_dirname = File.basename(Dir.pwd)
+Dir.chdir("RELEASE") do
+  command = "zip -r #{archive_zipname} #{archive_dirname}";
+  puts(command)
+  system(command)
+  command = "rm -rf #{archive_dirname}";
+  puts(command)
+  system(command)
+end
 
 #
 #  アーカイブファイルの展開と削除
