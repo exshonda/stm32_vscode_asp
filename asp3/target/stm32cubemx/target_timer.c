@@ -55,37 +55,6 @@
 void
 target_hrt_initialize(intptr_t exinf)
 {
-	LL_TIM_InitTypeDef TIM_InitStruct = {0};
-
-	/*
-	 * フリーランニングタイマ
-	 */
-	/* クロック有効 */
-	LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_TIM2);
-
-	TIM_InitStruct.Prescaler = __LL_TIM_CALC_PSC(SystemCoreClock, 1000000);
-	TIM_InitStruct.CounterMode = LL_TIM_COUNTERMODE_UP;
-	TIM_InitStruct.Autoreload = 0xffffffff; /* 上限値 */
-	TIM_InitStruct.ClockDivision = LL_TIM_CLOCKDIVISION_DIV1;
-
-	LL_TIM_Init(TIM2, &TIM_InitStruct);
-
-	LL_TIM_SetCounter(TIM2, 0);
-	LL_TIM_EnableCounter(TIM2);
-
-	/*
-	 *  割込み通知用タイマ
-	 */
-	/* クロック有効 */
-	LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_TIM5);
-
-	LL_TIM_Init(TIM5, &TIM_InitStruct);
-
-	/* OneShot */
-	LL_TIM_SetOnePulseMode(TIM5, LL_TIM_ONEPULSEMODE_SINGLE);
-
-	LL_TIM_ClearFlag_UPDATE(TIM5);
-	LL_TIM_EnableIT_UPDATE(TIM5);
 }
 
 /*
@@ -94,8 +63,6 @@ target_hrt_initialize(intptr_t exinf)
 void
 target_hrt_terminate(intptr_t exinf)
 {
-	LL_TIM_DisableCounter(TIM2);
-	LL_TIM_DisableCounter(TIM5);
 }
 
 /*
@@ -104,9 +71,6 @@ target_hrt_terminate(intptr_t exinf)
 void
 target_hrt_handler(void)
 {
-	/* Clear Event */
-	LL_TIM_ClearFlag_UPDATE(TIM5);
-
 	/*
 	 *  高分解能タイマ割込みを処理する．
 	 */

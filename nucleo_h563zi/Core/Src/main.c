@@ -1,13 +1,8 @@
 /* USER CODE BEGIN Header */
 /**
   ******************************************************************************
-  * @file    UART/UART_HyperTerminal_IT/Src/main.c
-  * @author  MCD Application Team
-  * @brief   This sample code shows how to use UART HAL and LL APIs to transmit
-  *          and receive a data buffer with a communication process based on IT;
-  *          The communication is done with the Hyperterminal PC application;
-  *          HAL driver is used to perform UART configuration, 
-  *          then TX/RX transfers procedures are based on LL APIs use
+  * @file           : main.c
+  * @brief          : Main program body
   ******************************************************************************
   * @attention
   *
@@ -46,55 +41,28 @@
 
 /* Private variables ---------------------------------------------------------*/
 
-UART_HandleTypeDef huart3;
+COM_InitTypeDef BspCOMInit;
+
+TIM_HandleTypeDef htim2;
+TIM_HandleTypeDef htim5;
 
 /* USER CODE BEGIN PV */
-
-/* UART handler declaration */
-UART_HandleTypeDef UartHandle;
-__IO uint8_t  ubTxComplete = 0;
-__IO uint8_t  ubRxComplete = 0;
-
-/* Buffer used for transmission */
-uint8_t aTxStartMessage[] = "\n\r ****UART-Hyperterminal communication based on IT (Mixed HAL/LL usage) ****\n\r Enter 10 characters using keyboard :\n\r";
-__IO uint32_t uwTxIndex = 0;
-uint8_t ubSizeToSend = sizeof(aTxStartMessage);
-uint8_t aTxEndMessage[] = "\n\r Example Finished\n\r";
-
-/* Buffer used for reception */
-uint8_t aRxBuffer[RXBUFFERSIZE];
-__IO uint32_t uwRxIndex = 0;
 
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
-static void MX_ICACHE_Init(void);
 static void MX_TIM2_Init(void);
 static void MX_TIM5_Init(void);
-static void MX_USART3_UART_Init(void);
+static void MX_ICACHE_Init(void);
 /* USER CODE BEGIN PFP */
 
 /* USER CODE END PFP */
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-void __io_putchar(uint8_t ch)
-{
-  HAL_UART_Transmit(&huart3, &ch, 1, 1);
-}
 
-int __io_getchar(void)
-{ 
-  HAL_StatusTypeDef Status = HAL_BUSY; 
-  uint8_t Data;
-
-  while(Status != HAL_OK) 
-    Status = HAL_UART_Receive(&huart3, &Data, 1, 10);
-
-  return(Data); 
-}
 /* USER CODE END 0 */
 
 /**
@@ -105,15 +73,7 @@ int main(void)
 {
 
   /* USER CODE BEGIN 1 */
-/* STM32H5xx HAL library initialization:
-       - Systick timer is configured by default as source of time base, but user
-             can eventually implement his proper time base source (a general purpose
-             timer for example or other time source), keeping in mind that Time base
-             duration should be kept 1ms since PPP_TIMEOUT_VALUEs are defined and
-             handled in milliseconds basis.
-       - Set NVIC Group Priority to 4
-       - Low Level Initialization
-     */
+
   /* USER CODE END 1 */
 
   /* MCU Configuration--------------------------------------------------------*/
@@ -122,10 +82,6 @@ int main(void)
   HAL_Init();
 
   /* USER CODE BEGIN Init */
-  /* Configure leds */
-  BSP_LED_Init(LED2);
-  BSP_LED_Init(LED1);
-  BSP_LED_Init(LED3);
 
   /* USER CODE END Init */
 
@@ -138,60 +94,10 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
-  MX_ICACHE_Init();
   MX_TIM2_Init();
   MX_TIM5_Init();
-  MX_USART3_UART_Init();
+  MX_ICACHE_Init();
   /* USER CODE BEGIN 2 */
-
-  /*## Configure UART peripheral for reception process (using LL) ##########*/  
-  /* Any data received will be stored "aRxBuffer" buffer : the number max of 
-     data received is RXBUFFERSIZE */
-  /* Enable RXNE and Error interrupts */  
-  LL_USART_EnableIT_RXNE(USART3);
-  LL_USART_EnableIT_ERROR(USART3);
-
-  /*## Start the transmission process (using LL) *##########################*/  
-  /* While the UART in reception process, user can transmit data from 
-     "aTxStartMessage" buffer */
-  /* Start USART transmission : Will initiate TXE interrupt after TDR register is empty */
-  LL_USART_TransmitData8(USART3, aTxStartMessage[uwTxIndex++]); 
-
-  /* Enable TXE interrupt */
-  LL_USART_EnableIT_TXE(USART3); 
-
-  /*## Wait for the end of the transfer ###################################*/
-  /* USART IRQ handler is not anymore routed to HAL_UART_IRQHandler() function 
-     and is now based on LL API functions use. 
-     Therefore, use of HAL IT based services is no more possible. */
-  /*  Once TX transfer is completed, LED2 will turn On.
-      Then, when RX transfer is completed, LED1 will turn On. */
-  while (ubTxComplete == 0)
-  {
-  }
-  BSP_LED_On(LED2);
-   
-  while (ubRxComplete == 0)
-  {
-  }
-  BSP_LED_On(LED1);
-
-
-  /*## Send the received Buffer ###########################################*/
-  /* Even if use of HAL IT based services is no more possible, use of HAL Polling based services
-     (as Transmit in polling mode) is still possible. */
-  if(HAL_UART_Transmit(&huart3, (uint8_t*)aRxBuffer, RXBUFFERSIZE, 1000)!= HAL_OK)
-  {
-    /* Transfer error in transmission process */
-    Error_Handler();
-  }
-  
-  /*## Send the End Message ###############################################*/  
-  if(HAL_UART_Transmit(&huart3, (uint8_t*)aTxEndMessage, TXENDMESSAGESIZE, 1000)!= HAL_OK)
-  {
-    /* Transfer error in transmission process */
-    Error_Handler();
-  }
 
   /* USER CODE END 2 */
 
@@ -203,11 +109,23 @@ int main(void)
   /* Initialize USER push-button, will be used to trigger an interrupt each time it's pressed.*/
   BSP_PB_Init(BUTTON_USER, BUTTON_MODE_EXTI);
 
+  /* Initialize COM1 port (115200, 8 bits (7-bit data + 1 stop bit), no parity */
+  BspCOMInit.BaudRate   = 115200;
+  BspCOMInit.WordLength = COM_WORDLENGTH_8B;
+  BspCOMInit.StopBits   = COM_STOPBITS_1;
+  BspCOMInit.Parity     = COM_PARITY_NONE;
+  BspCOMInit.HwFlowCtl  = COM_HWCONTROL_NONE;
+  if (BSP_COM_Init(COM1, &BspCOMInit) != BSP_ERROR_NONE)
+  {
+    Error_Handler();
+  }
+
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
   sta_ker();
   while (1)
   {
+
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -234,7 +152,7 @@ void SystemClock_Config(void)
   * in the RCC_OscInitTypeDef structure.
   */
   RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSE;
-  RCC_OscInitStruct.HSEState = RCC_HSE_BYPASS_DIGITAL;
+  RCC_OscInitStruct.HSEState = RCC_HSE_BYPASS;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
   RCC_OscInitStruct.PLL.PLLSource = RCC_PLL1_SOURCE_HSE;
   RCC_OscInitStruct.PLL.PLLM = 4;
@@ -286,13 +204,6 @@ static void MX_ICACHE_Init(void)
   /* USER CODE BEGIN ICACHE_Init 1 */
 
   /* USER CODE END ICACHE_Init 1 */
-
-  /** Enable instruction cache (default 2-ways set associative cache)
-  */
-  if (HAL_ICACHE_Enable() != HAL_OK)
-  {
-    Error_Handler();
-  }
   /* USER CODE BEGIN ICACHE_Init 2 */
 
   /* USER CODE END ICACHE_Init 2 */
@@ -311,23 +222,33 @@ static void MX_TIM2_Init(void)
 
   /* USER CODE END TIM2_Init 0 */
 
-  LL_TIM_InitTypeDef TIM_InitStruct = {0};
-
-  /* Peripheral clock enable */
-  LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_TIM2);
+  TIM_ClockConfigTypeDef sClockSourceConfig = {0};
+  TIM_MasterConfigTypeDef sMasterConfig = {0};
 
   /* USER CODE BEGIN TIM2_Init 1 */
 
   /* USER CODE END TIM2_Init 1 */
-  TIM_InitStruct.Prescaler = 0;
-  TIM_InitStruct.CounterMode = LL_TIM_COUNTERMODE_UP;
-  TIM_InitStruct.Autoreload = 4294967295;
-  TIM_InitStruct.ClockDivision = LL_TIM_CLOCKDIVISION_DIV1;
-  LL_TIM_Init(TIM2, &TIM_InitStruct);
-  LL_TIM_DisableARRPreload(TIM2);
-  LL_TIM_SetClockSource(TIM2, LL_TIM_CLOCKSOURCE_INTERNAL);
-  LL_TIM_SetTriggerOutput(TIM2, LL_TIM_TRGO_RESET);
-  LL_TIM_DisableMasterSlaveMode(TIM2);
+  htim2.Instance = TIM2;
+  htim2.Init.Prescaler = 0;
+  htim2.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim2.Init.Period = 4294967295;
+  htim2.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim2.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_Base_Init(&htim2) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
+  if (HAL_TIM_ConfigClockSource(&htim2, &sClockSourceConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim2, &sMasterConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
   /* USER CODE BEGIN TIM2_Init 2 */
 
   /* USER CODE END TIM2_Init 2 */
@@ -346,74 +267,40 @@ static void MX_TIM5_Init(void)
 
   /* USER CODE END TIM5_Init 0 */
 
-  LL_TIM_InitTypeDef TIM_InitStruct = {0};
-
-  /* Peripheral clock enable */
-  LL_APB1_GRP1_EnableClock(LL_APB1_GRP1_PERIPH_TIM5);
+  TIM_ClockConfigTypeDef sClockSourceConfig = {0};
+  TIM_MasterConfigTypeDef sMasterConfig = {0};
 
   /* USER CODE BEGIN TIM5_Init 1 */
 
   /* USER CODE END TIM5_Init 1 */
-  TIM_InitStruct.Prescaler = 0;
-  TIM_InitStruct.CounterMode = LL_TIM_COUNTERMODE_UP;
-  TIM_InitStruct.Autoreload = 4294967295;
-  TIM_InitStruct.ClockDivision = LL_TIM_CLOCKDIVISION_DIV1;
-  LL_TIM_Init(TIM5, &TIM_InitStruct);
-  LL_TIM_DisableARRPreload(TIM5);
-  LL_TIM_SetOnePulseMode(TIM5, LL_TIM_ONEPULSEMODE_SINGLE);
-  LL_TIM_SetTriggerOutput(TIM5, LL_TIM_TRGO_RESET);
-  LL_TIM_DisableMasterSlaveMode(TIM5);
+  htim5.Instance = TIM5;
+  htim5.Init.Prescaler = 0;
+  htim5.Init.CounterMode = TIM_COUNTERMODE_UP;
+  htim5.Init.Period = 4294967295;
+  htim5.Init.ClockDivision = TIM_CLOCKDIVISION_DIV1;
+  htim5.Init.AutoReloadPreload = TIM_AUTORELOAD_PRELOAD_DISABLE;
+  if (HAL_TIM_Base_Init(&htim5) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sClockSourceConfig.ClockSource = TIM_CLOCKSOURCE_INTERNAL;
+  if (HAL_TIM_ConfigClockSource(&htim5, &sClockSourceConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  if (HAL_TIM_OnePulse_Init(&htim5, TIM_OPMODE_SINGLE) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  sMasterConfig.MasterOutputTrigger = TIM_TRGO_RESET;
+  sMasterConfig.MasterSlaveMode = TIM_MASTERSLAVEMODE_DISABLE;
+  if (HAL_TIMEx_MasterConfigSynchronization(&htim5, &sMasterConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
   /* USER CODE BEGIN TIM5_Init 2 */
 
   /* USER CODE END TIM5_Init 2 */
-
-}
-
-/**
-  * @brief USART3 Initialization Function
-  * @param None
-  * @retval None
-  */
-static void MX_USART3_UART_Init(void)
-{
-
-  /* USER CODE BEGIN USART3_Init 0 */
-
-  /* USER CODE END USART3_Init 0 */
-
-  /* USER CODE BEGIN USART3_Init 1 */
-
-  /* USER CODE END USART3_Init 1 */
-  huart3.Instance = USART3;
-  huart3.Init.BaudRate = 115200;
-  huart3.Init.WordLength = UART_WORDLENGTH_8B;
-  huart3.Init.StopBits = UART_STOPBITS_1;
-  huart3.Init.Parity = UART_PARITY_NONE;
-  huart3.Init.Mode = UART_MODE_TX_RX;
-  huart3.Init.HwFlowCtl = UART_HWCONTROL_NONE;
-  huart3.Init.OverSampling = UART_OVERSAMPLING_16;
-  huart3.Init.OneBitSampling = UART_ONE_BIT_SAMPLE_DISABLE;
-  huart3.Init.ClockPrescaler = UART_PRESCALER_DIV1;
-  huart3.AdvancedInit.AdvFeatureInit = UART_ADVFEATURE_NO_INIT;
-  if (HAL_UART_Init(&huart3) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  if (HAL_UARTEx_SetTxFifoThreshold(&huart3, UART_TXFIFO_THRESHOLD_1_8) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  if (HAL_UARTEx_SetRxFifoThreshold(&huart3, UART_RXFIFO_THRESHOLD_1_8) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  if (HAL_UARTEx_DisableFifoMode(&huart3) != HAL_OK)
-  {
-    Error_Handler();
-  }
-  /* USER CODE BEGIN USART3_Init 2 */
-
-  /* USER CODE END USART3_Init 2 */
 
 }
 
@@ -424,13 +311,84 @@ static void MX_USART3_UART_Init(void)
   */
 static void MX_GPIO_Init(void)
 {
+  GPIO_InitTypeDef GPIO_InitStruct = {0};
   /* USER CODE BEGIN MX_GPIO_Init_1 */
 
   /* USER CODE END MX_GPIO_Init_1 */
 
   /* GPIO Ports Clock Enable */
+  __HAL_RCC_GPIOE_CLK_ENABLE();
+  __HAL_RCC_GPIOC_CLK_ENABLE();
   __HAL_RCC_GPIOH_CLK_ENABLE();
-  __HAL_RCC_GPIOD_CLK_ENABLE();
+  __HAL_RCC_GPIOA_CLK_ENABLE();
+  __HAL_RCC_GPIOB_CLK_ENABLE();
+  __HAL_RCC_GPIOG_CLK_ENABLE();
+
+  /*Configure GPIO pins : RMII_MDC_Pin RMII_RXD0_Pin RMII_RXD1_Pin */
+  GPIO_InitStruct.Pin = RMII_MDC_Pin|RMII_RXD0_Pin|RMII_RXD1_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
+  GPIO_InitStruct.Alternate = GPIO_AF11_ETH;
+  HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
+
+  /*Configure GPIO pins : RMII_REF_CLK_Pin RMII_MDIO_Pin RMII_CRS_DV_Pin */
+  GPIO_InitStruct.Pin = RMII_REF_CLK_Pin|RMII_MDIO_Pin|RMII_CRS_DV_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
+  GPIO_InitStruct.Alternate = GPIO_AF11_ETH;
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : VBUS_SENSE_Pin */
+  GPIO_InitStruct.Pin = VBUS_SENSE_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(VBUS_SENSE_GPIO_Port, &GPIO_InitStruct);
+
+  /*Configure GPIO pins : UCPD_CC1_Pin UCPD_CC2_Pin */
+  GPIO_InitStruct.Pin = UCPD_CC1_Pin|UCPD_CC2_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : RMII_TXD1_Pin */
+  GPIO_InitStruct.Pin = RMII_TXD1_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
+  GPIO_InitStruct.Alternate = GPIO_AF11_ETH;
+  HAL_GPIO_Init(RMII_TXD1_GPIO_Port, &GPIO_InitStruct);
+
+  /*Configure GPIO pin : UCPD_FLT_Pin */
+  GPIO_InitStruct.Pin = UCPD_FLT_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_RISING;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(UCPD_FLT_GPIO_Port, &GPIO_InitStruct);
+
+  /*Configure GPIO pins : USB_FS_N_Pin USB_FS_P_Pin */
+  GPIO_InitStruct.Pin = USB_FS_N_Pin|USB_FS_P_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  GPIO_InitStruct.Alternate = GPIO_AF10_USB;
+  HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
+
+  /*Configure GPIO pins : RMII_TXT_EN_Pin RMI_TXD0_Pin */
+  GPIO_InitStruct.Pin = RMII_TXT_EN_Pin|RMI_TXD0_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
+  GPIO_InitStruct.Alternate = GPIO_AF11_ETH;
+  HAL_GPIO_Init(GPIOG, &GPIO_InitStruct);
+
+  /*Configure GPIO pins : ARD_D1_TX_Pin ARD_D0_RX_Pin */
+  GPIO_InitStruct.Pin = ARD_D1_TX_Pin|ARD_D0_RX_Pin;
+  GPIO_InitStruct.Mode = GPIO_MODE_AF_PP;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  GPIO_InitStruct.Alternate = GPIO_AF8_LPUART1;
+  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
   /* USER CODE BEGIN MX_GPIO_Init_2 */
 
@@ -438,93 +396,6 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
-
-/**
-  * @brief  Rx Transfer completed callback
-  * @note   This example shows a simple way to report end of IT Rx transfer, and 
-  *         you can add your own implementation.
-  * @retval None
-  */
-void UART_CharReception_Callback(void)
-{
-  /* Read Received character. RXNE flag is cleared by reading of RDR register */
-  aRxBuffer[uwRxIndex++] = LL_USART_ReceiveData8(USART3);
-
-  /* Check if reception is completed (expected nb of bytes has been received) */
-  if (uwRxIndex == RXBUFFERSIZE)
-  {
-    /* Set Reception complete boolean to 1 */
-    ubRxComplete = 1;
-  }
-}
-
-/**
-  * @brief  Function called for achieving next TX Byte sending
-  * @retval None
-  */
-void UART_TXEmpty_Callback(void)
-{
-  if(uwTxIndex == (ubSizeToSend - 1))
-  {
-    /* Disable TXE interrupt */
-    LL_USART_DisableIT_TXE(USART3);
-    
-    /* Enable TC interrupt */
-    LL_USART_EnableIT_TC(USART3);
-  }
-
-  /* Fill TDR with a new char */
-  LL_USART_TransmitData8(USART3, aTxStartMessage[uwTxIndex++]);
-}
-
-/**
-  * @brief  Function called at completion of last byte transmission
-  * @retval None
-  */
-void UART_CharTransmitComplete_Callback(void)
-{
-  if(uwTxIndex == sizeof(aTxStartMessage))
-  {
-    uwTxIndex = 0;
-    
-    /* Disable TC interrupt */
-    LL_USART_DisableIT_TC(USART3);
-    
-    /* Set Tx complete boolean to 1 */
-    ubTxComplete = 1;
-  }
-}
-
-/**
-  * @brief  UART error callbacks
-  * @note   This example shows a simple way to report transfer error, and you can
-  *         add your own implementation.
-  * @retval None
-  */
-void UART_Error_Callback(void)
-{
-  __IO uint32_t isr_reg;
-
-  /* Disable USARTx_IRQn */
-  NVIC_DisableIRQ(USART3_IRQn);
-  
-  /* Error handling example :
-    - Read USART ISR register to identify flag that leads to IT raising
-    - Perform corresponding error handling treatment according to flag
-  */
-  isr_reg = LL_USART_ReadReg(USART3, ISR);
-  if (isr_reg & LL_USART_ISR_NE)
-  {
-    /* Turn LED3 on: Transfer error in reception/transmission process */
-    BSP_LED_On(LED3);
-  }
-  else
-  {
-    /* Turn LED3 on: Transfer error in reception/transmission process */
-    BSP_LED_On(LED3);
-  }
-}
-
 
 /* USER CODE END 4 */
 
@@ -536,6 +407,7 @@ void Error_Handler(void)
 {
   /* USER CODE BEGIN Error_Handler_Debug */
   /* User can add his own implementation to report the HAL error return state */
+  __disable_irq();
   /* Toggle LED3 for error */
   while (1)
   {

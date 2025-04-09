@@ -4,6 +4,7 @@ nucleo_h563zi/Core/Inc/*
 !nucleo_h563zi/Core/Inc/main.h
 nucleo_h563zi/Core/Src/*
 !nucleo_h563zi/Core/Src/main.c
+!nucleo_h563zi/Core/Src/stm32h5xx_it.c
 nucleo_h563zi/Drivers/
 
 nucleo_h563zi/.mxproject

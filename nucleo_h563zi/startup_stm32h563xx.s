@@ -191,7 +191,7 @@ g_pfnVectors:
 	.word	TIM2_IRQHandler
 	.word	TIM3_IRQHandler
 	.word	TIM4_IRQHandler
-	.word	target_hrt_handler
+	.word	TIM5_IRQHandler
 	.word	TIM6_IRQHandler
 	.word	TIM7_IRQHandler
 	.word	I2C1_EV_IRQHandler

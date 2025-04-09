@@ -44,7 +44,6 @@
  */
 #include "kernel_impl.h"
 #include <sil.h>
-#include "stm32h5xx_ll_lpuart.h"
 
 #ifndef TOPPERS_OMIT_TECS
 /*
