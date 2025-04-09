@@ -1,0 +1,12 @@
+{
+    "files.associations": {
+        "*.trb": "ruby",
+        "stm32cubemx.h": "c",
+        "chip_syssvc.h": "c",
+        "target_timer.h": "c",
+        "stm32h5xx_ll_tim.h": "c",
+        "stm32h5xx_ll_rcc.h": "c",
+        "target_syssvc.h": "c",
+        "serial.h": "c"
+    }
+}
