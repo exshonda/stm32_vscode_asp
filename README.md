@@ -27,3 +27,15 @@ TOPPERS/ASP3の開発を[Visual Studio Code](https://code.visualstudio.com/)の[
 Visual Studio Code で、`nucleo_h563zi`フォルダを開いて、下のステータスバーの左にある「ビルド」を押します。
 
 ![Visual Studio Code](images/vscode.png)
+
+### Visual Studio Code でのデバッグ
+
+'STM32 VS Code Extension'の'Create empty project'で作成した際の設定ファイルが`nucleo_h563zi/.vscode`にあります。
+Visual Studio Code の「実行とデバッグ」から`Build & Debug Microcontroller - ST-Link`を選んで「デバッグの開始」ボタンを押してください。
+
+![Visual Studio Code Debug](images/vscode_dbg.png)
+
+デバッグ起動に失敗した場合、ST-Linkのファームウェアアップデートが必要な場合があります。
+下記のサイトからアップデートツールをダウンロードして、ST-Linkのファームウェアをアップデートしてください。
+
+<https://www.st.com/ja/development-tools/stsw-link007.html>
