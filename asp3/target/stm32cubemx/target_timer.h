@@ -119,6 +119,7 @@ Inline void target_hrt_raise_event(void)
  * 高分解能タイマ割込みハンドラ
  */
 extern void	target_hrt_handler(void);
+extern void	target_systick_handler(void);
 
 #endif /* TOPPERS_MACRO_ONLY */
 #endif /* USE_TIM_AS_HRT */

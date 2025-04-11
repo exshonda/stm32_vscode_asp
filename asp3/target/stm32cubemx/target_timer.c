@@ -47,7 +47,9 @@
 #include "time_event.h"
 #include "target_timer.h"
 #include <sil.h>
-#include "stm32h5xx_ll_bus.h"
+#include "stm32h5xx_hal_tim.h"
+
+extern TIM_HandleTypeDef htim5;
 
 /*
  * タイマの起動処理
@@ -71,8 +73,15 @@ target_hrt_terminate(intptr_t exinf)
 void
 target_hrt_handler(void)
 {
+	HAL_TIM_IRQHandler(&htim5);
 	/*
 	 *  高分解能タイマ割込みを処理する．
 	 */
     signal_time();
+}
+
+void
+target_systick_handler(void)
+{
+	HAL_IncTick();
 }

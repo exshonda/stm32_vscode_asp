@@ -59,8 +59,6 @@
  */
 #define DEFAULT_ISTKSZ    (0x1000) /* 4KByte */
 
-#define _kernel_istk   _estack
-
 /*
  * IDLE処理の定義
  *
@@ -74,6 +72,8 @@
 	msr		basepri, r1;
 
 #ifndef TOPPERS_MACRO_ONLY
+
+extern int _estack;
 
 /*
  * ターゲットシステム依存の初期化

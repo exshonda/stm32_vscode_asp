@@ -115,7 +115,7 @@ $kernelCfgC.append(<<EOS)
  */
 __attribute__ ((section(".vector")))
 const FP _kernel_vector_table[] = {
-    (FP)_estack,                       /* 0 The initial stack pointer */
+    (FP)&_estack,                      /* 0 The initial stack pointer */
     (FP)Reset_Handler,                 /* 1 The reset handler */
 EOS
 Array(2..14).each { |excno|

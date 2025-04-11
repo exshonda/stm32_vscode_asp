@@ -9,14 +9,24 @@
 #include "t_stddef.h"
 #include "target_serial.h"
 #include "target_syssvc.h"
+#include "stm32h5xx_nucleo.h"
 
 struct sio_port_control_block
 {
     intptr_t exinf;
-    FILE *file;
+    UART_HandleTypeDef *handle; /* UARTハンドル */
 };
 
-static SIOPCB siopcb[TNUM_PORT];
+/*
+ *  SIOポート管理ブロックのエリア
+ */
+static SIOPCB siopcb_table[TNUM_PORT];
+
+/*
+ *  SIOポートIDから管理ブロックを取り出すためのマクロ
+ */
+#define INDEX_SIOP(siopid)	((uint_t)((siopid) - 1))
+#define get_siopcb(siopid)	(&(siopcb_table[INDEX_SIOP(siopid)]))
 
 /*
  * SIOドライバの初期化
@@ -38,23 +48,13 @@ void sio_terminate(intptr_t exinf)
 SIOPCB *sio_opn_por(ID siopid, intptr_t exinf)
 {
     SIOPCB *result = NULL;
-    if (siopid >= TNUM_PORT)
+    if (siopid > TNUM_PORT)
     {
         return result;
     }
-    result = &siopcb[siopid];
+    result = get_siopcb(siopid);
     result->exinf = exinf;
-    switch (siopid)
-    {
-    case 1:
-        result->file = stdout;
-        break;
-    case 2:
-        result->file = stderr;
-        break;
-    default:
-        return NULL;
-    }
+    result->handle = &hcom_uart[siopid - 1];
     return result;
 }
 
@@ -63,15 +63,15 @@ SIOPCB *sio_opn_por(ID siopid, intptr_t exinf)
  */
 void sio_cls_por(SIOPCB *p_siopcb)
 {
-    p_siopcb->file = NULL;
+    p_siopcb->handle = NULL;
 }
 
 /*
  * SIOポートへの文字送信
  */
-bool_t sio_snd_chr(SIOPCB *p_siopcb, char c)
+bool_t sio_snd_chr(SIOPCB *p_siopcb, char ch)
 {
-    return putc(c, p_siopcb->file) != EOF;
+    return HAL_UART_Transmit(p_siopcb->handle, (uint8_t *) &ch, 1, COM_POLL_TIMEOUT) == HAL_OK;
 }
 
 /*
@@ -79,7 +79,10 @@ bool_t sio_snd_chr(SIOPCB *p_siopcb, char c)
  */
 int_t sio_rcv_chr(SIOPCB *p_siopcb)
 {
-    return getc(stdin);
+    uint8_t ch;
+    if(HAL_UART_Receive(p_siopcb->handle, &ch, 1, COM_POLL_TIMEOUT) == HAL_OK)
+        return ch;
+    return -1; // 受信失敗
 }
 
 /*
