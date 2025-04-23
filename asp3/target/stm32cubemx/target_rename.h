@@ -23,8 +23,4 @@
 
 #include "chip_rename.h"
 
-#undef exc_tbl
-#define exc_tbl						g_pfnVectors
-#define _kernel_exc_tbl				g_pfnVectors
-
 #endif /* TOPPERS_TARGET_RENAME_H */

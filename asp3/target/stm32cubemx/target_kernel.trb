@@ -152,6 +152,23 @@ $INTNO_VALID.each { |inhno|
 }
 $kernelCfgC.add2("};")
 
+$kernelCfgC.add("const FP _kernel_exc_tbl[] = {")
+Array(0..14).each { |excno|
+    if exc = $cfgData[:DEF_EXC][excno]
+        $kernelCfgC.add("   (FP)(#{exc[:exchdr]}), /* #{excno} */")
+    else
+        $kernelCfgC.add("   (FP)(_kernel_default_exc_handler), /* #{excno} */")
+    end
+}
+$INTNO_VALID.each { |inhno|
+    if inh = $cfgData[:DEF_INH][inhno]
+        $kernelCfgC.add("   (FP)(#{inh[:inthdr]}), /* #{inhno} */")
+    else
+        $kernelCfgC.add("   (FP)(_kernel_default_int_handler), /* #{inhno} */")
+    end
+}
+$kernelCfgC.add2("};")
+
 #
 #  _kernel_bitpat_cfgintの生成
 #
