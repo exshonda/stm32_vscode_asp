@@ -8,13 +8,13 @@
 #define TOPPERS_TARGET_SERIAL_H
 
 #include "stm32cubemx.h"
-
 /*
- * USART関連の定義
+ * SIO割込みハンドラ登録のための定数
  */
-#define USART_INTNO  (0x10000U | (RP2040_UART0_IRQn + 16))
-#define USART_INTPRI (TMAX_INTPRI - 1)
-#define USART_ISRPRI 1
+#define INHNO_USART		(USART3_IRQn + 16)	/* 割込みハンドラ番号 */
+#define INTNO_USART		(USART3_IRQn + 16)	/* 割込み番号 */
+#define INTPRI_USART	(TMAX_INTPRI - 1)   /* 割込み優先度 */
+#define INTATR_USART	TA_NULL             /* 割込み属性 */
 
 /*
  *  シリアルポート数の定義
@@ -43,6 +43,12 @@ extern void sio_initialize(intptr_t exinf);
  *  SIO初期化
  */
 extern void sio_terminate(intptr_t exinf);
+
+/*
+ * SIO割込みハンドラ
+ */
+extern void	sio_handler(void);
+
 
 #endif /* TOPPERS_MACRO_ONLY */
 
