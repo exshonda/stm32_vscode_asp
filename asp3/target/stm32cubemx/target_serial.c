@@ -13,17 +13,25 @@
 
 struct sio_port_control_block
 {
+    IRQn_Type irq;                  /* 割込み番号 */
     intptr_t exinf;
-    UART_HandleTypeDef *handle; /* UARTハンドル */
-    uint8_t rx_buf[256];               /* 受信バッファ */
-    uint32_t rx_wpos;              /* 受信バッファ書き込み位置 */
-    uint32_t rx_rpos;              /* 受信バッファ読み込み位置 */
+    UART_HandleTypeDef *handle;     /* UARTハンドル */
+    bool_t rdy_snd;                 /* 送信可能コールバック */
+    uint8_t snd_buf[256];           /* 送信バッファ */
+    uint32_t snd_wpos;              /* 送信バッファ書き込み位置 */
+    uint32_t snd_rpos;              /* 送信バッファ読み込み位置 */
+    bool_t rdy_rcv;                 /* 受信通知コールバック */
+    uint8_t rcv_buf[256];           /* 受信バッファ */
+    uint32_t rcv_wpos;              /* 受信バッファ書き込み位置 */
+    uint32_t rcv_rpos;              /* 受信バッファ読み込み位置 */
 };
 
 /*
  *  SIOポート管理ブロックのエリア
  */
-static SIOPCB siopcb_table[TNUM_PORT];
+static SIOPCB siopcb_table[TNUM_PORT] = {
+    {USART3_IRQn, 0, NULL, false, {0}, 0, 0, false, {0}, 0, 0},
+};
 
 /*
  *  SIOポートIDから管理ブロックを取り出すためのマクロ
@@ -48,6 +56,18 @@ void sio_initialize(intptr_t exinf)
  */
 void sio_terminate(intptr_t exinf)
 {
+	uint_t	i;
+	SIOPCB	*p_siopcb;
+
+	for (i = 0; i < TNUM_PORT; i++) {
+		p_siopcb = &(siopcb_table[i]);
+		if (p_siopcb->handle) {
+			/*
+			 *  オープンされているSIOポートのクローズ
+			 */
+			sio_cls_por(&(siopcb_table[i]));
+		}
+	}
 }
 
 /*
@@ -55,23 +75,28 @@ void sio_terminate(intptr_t exinf)
  */
 SIOPCB *sio_opn_por(ID siopid, intptr_t exinf)
 {
-    SIOPCB *result = NULL;
-    if (siopid > TNUM_PORT)
-    {
-        return result;
+    SIOPCB *p_siopcb = NULL;
+    if (siopid > TNUM_PORT) {
+        return p_siopcb;
     }
-    result = get_siopcb(siopid);
-    result->exinf = exinf;
-    result->handle = &hcom_uart[siopid - 1];
-    result->rx_wpos = 0;
-    result->rx_rpos = 0;
 
-    HAL_NVIC_SetPriority(USART3_IRQn, 1, 0);
-    HAL_NVIC_EnableIRQ(USART3_IRQn);
+    p_siopcb = get_siopcb(siopid);
+    /* すでにオープンされている場合はNULLを返す */
+    if (p_siopcb->handle != NULL) {
+        return NULL;
+    }
 
-    HAL_UART_Receive_IT(result->handle, &result->rx_buf[result->rx_wpos], 1); // 受信割込み開始
+    p_siopcb->exinf = exinf;
+    p_siopcb->handle = &hcom_uart[siopid - 1];
+    p_siopcb->rcv_wpos = 0;
+    p_siopcb->rcv_rpos = 0;
 
-    return result;
+    HAL_NVIC_SetPriority(p_siopcb->irq, 1, 0);
+    HAL_NVIC_EnableIRQ(p_siopcb->irq);
+
+    HAL_UART_Receive_IT(p_siopcb->handle, &p_siopcb->rcv_buf[p_siopcb->rcv_wpos], 1); // 受信割込み開始
+
+    return p_siopcb;
 }
 
 /*
@@ -79,6 +104,8 @@ SIOPCB *sio_opn_por(ID siopid, intptr_t exinf)
  */
 void sio_cls_por(SIOPCB *p_siopcb)
 {
+    HAL_NVIC_DisableIRQ(p_siopcb->irq);
+
     p_siopcb->handle = NULL;
 }
 
@@ -87,7 +114,12 @@ void sio_cls_por(SIOPCB *p_siopcb)
  */
 bool_t sio_snd_chr(SIOPCB *p_siopcb, char ch)
 {
-    return HAL_UART_Transmit(p_siopcb->handle, (uint8_t *) &ch, 1, COM_POLL_TIMEOUT) == HAL_OK;
+    p_siopcb->snd_buf[p_siopcb->snd_wpos] = ch; // 送信バッファに文字を格納
+    if (HAL_UART_Transmit_IT(p_siopcb->handle, &p_siopcb->snd_buf[p_siopcb->snd_wpos], 1) == HAL_OK) {
+        p_siopcb->snd_wpos = (p_siopcb->snd_wpos + 1) % sizeof(p_siopcb->snd_buf); // 書き込み位置を更新
+        return true; // 送信成功
+    }
+    return false; // 送信失敗
 }
 
 /*
@@ -96,10 +128,10 @@ bool_t sio_snd_chr(SIOPCB *p_siopcb, char ch)
 int_t sio_rcv_chr(SIOPCB *p_siopcb)
 {
     uint8_t ch;
-    if (p_siopcb->rx_wpos != p_siopcb->rx_rpos) // 受信バッファにデータがある場合
+    if (p_siopcb->rcv_wpos != p_siopcb->rcv_rpos) // 受信バッファにデータがある場合
     {
-        ch = p_siopcb->rx_buf[p_siopcb->rx_rpos];
-        p_siopcb->rx_rpos = (p_siopcb->rx_rpos + 1) % sizeof(p_siopcb->rx_buf); // 読み込み位置を更新
+        ch = p_siopcb->rcv_buf[p_siopcb->rcv_rpos];
+        p_siopcb->rcv_rpos = (p_siopcb->rcv_rpos + 1) % sizeof(p_siopcb->rcv_buf); // 読み込み位置を更新
         return ch;
     }
     return -1; // 受信失敗
@@ -110,13 +142,12 @@ int_t sio_rcv_chr(SIOPCB *p_siopcb)
  */
 void sio_ena_cbr(SIOPCB *p_siopcb, uint_t cbrtn)
 {
-    switch (cbrtn)
-    {
+    switch (cbrtn) {
     case SIO_RDY_SND:
-        /* code */
+        p_siopcb->rdy_snd = true;
         break;
     case SIO_RDY_RCV:
-        /* code */
+        p_siopcb->rdy_rcv = true;
         break;
     default:
         break;
@@ -128,13 +159,12 @@ void sio_ena_cbr(SIOPCB *p_siopcb, uint_t cbrtn)
  */
 void sio_dis_cbr(SIOPCB *p_siopcb, uint_t cbrtn)
 {
-    switch (cbrtn)
-    {
+    switch (cbrtn) {
     case SIO_RDY_SND:
-        /* code */
+        p_siopcb->rdy_snd = false;
         break;
     case SIO_RDY_RCV:
-        /* code */
+        p_siopcb->rdy_rcv = false;
         break;
     default:
         break;
@@ -146,8 +176,7 @@ void sio_dis_cbr(SIOPCB *p_siopcb, uint_t cbrtn)
  */
 void target_fput_log(char c)
 {
-    if (c == '\n')
-    {
+    if (c == '\n') {
         putc('\r', stdout);
     }
     putc(c, stdout);
@@ -155,56 +184,81 @@ void target_fput_log(char c)
 
 void HAL_UART_TxCpltCallback(UART_HandleTypeDef *huart)
 {
-    SIOPCB *result = NULL;
-    for (uint_t i = 0; i < TNUM_PORT; i++)
-    {
-        if (siopcb_table[i].handle == huart)
-        {
-            result = &siopcb_table[i];
+    SIOPCB *p_siopcb = NULL;
+    for (uint_t i = 0; i < TNUM_PORT; i++) {
+        if (siopcb_table[i].handle == huart) {
+            p_siopcb = &siopcb_table[i];
             break;
         }
     }
-    if (result == NULL)
-    {
-        return; // 該当するポートが見つからない場合は何もしない
+
+    /*
+     *  該当するポートが見つからない場合は何もしない
+     */
+    if (p_siopcb == NULL) {
+        return;
     }
-    // 送信完了時の処理をここに追加することができます。
+
+    /*
+     *  送信可能コールバックルーチンを呼び出す．
+     */
+    if (p_siopcb->rdy_snd) {
+        sio_irdy_snd(p_siopcb->exinf);
+    }
 }
 
 void HAL_UART_RxCpltCallback(UART_HandleTypeDef *huart)
 {
-    SIOPCB *result = NULL;
-    for (uint_t i = 0; i < TNUM_PORT; i++)
-    {
-        if (siopcb_table[i].handle == huart)
-        {
-            result = &siopcb_table[i];
+    SIOPCB *p_siopcb = NULL;
+    for (uint_t i = 0; i < TNUM_PORT; i++) {
+        if (siopcb_table[i].handle == huart) {
+            p_siopcb = &siopcb_table[i];
             break;
         }
     }
-    if (result == NULL)
-    {
-        return; // 該当するポートが見つからない場合は何もしない
+
+    /*
+     *  該当するポートが見つからない場合は何もしない
+     */
+    if (p_siopcb == NULL) {
+        return;
     }
-    result->rx_wpos = (result->rx_wpos + 1) % sizeof(result->rx_buf); // 書き込み位置を更新
-    HAL_UART_Receive_IT(result->handle, &result->rx_buf[result->rx_wpos], 1); // 受信割込み開始
+
+    /*
+     *  受信データをバッファに格納する．
+     */
+    p_siopcb->rcv_wpos = (p_siopcb->rcv_wpos + 1) % sizeof(p_siopcb->rcv_buf);
+
+    /*
+     *  受信割込み開始
+     */
+    HAL_UART_Receive_IT(p_siopcb->handle, &p_siopcb->rcv_buf[p_siopcb->rcv_wpos], 1);
+
+    /*
+     *  受信通知コールバックルーチンを呼び出す．
+     */
+    if (p_siopcb->rdy_rcv) {
+        sio_irdy_rcv(p_siopcb->exinf);
+    }
 }
 
 void HAL_UART_ErrorCallback(UART_HandleTypeDef *huart)
 {
-    SIOPCB *result = NULL;
-    for (uint_t i = 0; i < TNUM_PORT; i++)
-    {
-        if (siopcb_table[i].handle == huart)
-        {
-            result = &siopcb_table[i];
+    SIOPCB *p_siopcb = NULL;
+    for (uint_t i = 0; i < TNUM_PORT; i++) {
+        if (siopcb_table[i].handle == huart) {
+            p_siopcb = &siopcb_table[i];
             break;
         }
     }
-    if (result == NULL)
-    {
-        return; // 該当するポートが見つからない場合は何もしない
+
+    /*
+     *  該当するポートが見つからない場合は何もしない
+     */
+    if (p_siopcb == NULL) {
+        return;
     }
+
     // エラー処理をここに追加することができます。
 }
 

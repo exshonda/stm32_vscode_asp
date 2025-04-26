@@ -99,9 +99,9 @@ target_hrt_set_event(HRTCNT hrtcnt)
 	LL_TIM_SetCounter(TIM5, 0);
 	LL_TIM_SetAutoReload(TIM5, hrtcnt);
 	LL_TIM_EnableCounter(TIM5);
-    }
+}
 
-    /*
+/*
  *  高分解能タイマ割込みの要求
  *
  */

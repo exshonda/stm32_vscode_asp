@@ -49,6 +49,7 @@
 #include <sil.h>
 #include "stm32h5xx_hal_tim.h"
 
+extern TIM_HandleTypeDef htim2;
 extern TIM_HandleTypeDef htim5;
 
 /*
@@ -57,6 +58,7 @@ extern TIM_HandleTypeDef htim5;
 void
 target_hrt_initialize(intptr_t exinf)
 {
+	HAL_TIM_Base_Start_IT(&htim2);
 	HAL_TIM_Base_Start_IT(&htim5);
 }
 
@@ -66,6 +68,7 @@ target_hrt_initialize(intptr_t exinf)
 void
 target_hrt_terminate(intptr_t exinf)
 {
+	HAL_TIM_Base_Stop(&htim2);
 	HAL_TIM_Base_Stop(&htim5);
 }
 
