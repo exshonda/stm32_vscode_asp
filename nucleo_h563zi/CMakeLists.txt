@@ -43,8 +43,6 @@ add_subdirectory(cmake/stm32cubemx)
 # TOPPERS/ASP3 の STM32 Cube MX 用のコンパイラ定義をインクルード
 include(../asp3/asp3_stm32cubemx.cmake)
 
-target_link_libraries(${CMAKE_PROJECT_NAME} asp3)
-
 # TOPPERS/ASP3 のカーネルオブジェクト定義のcfgファイルを設定
 set(ASP3_APP_CFG_FILE ${ASP3_ROOT_DIR}/sample/sample1.cfg)
 
@@ -85,6 +83,7 @@ target_link_libraries(${CMAKE_PROJECT_NAME}
     stm32cubemx
 
     # Add user defined libraries
+    asp3
 )
 
 # TOPPERS/ASP3 のチェックを行う（シンボルがGCされるとエラーになるので省略）
