@@ -133,7 +133,7 @@ g_pfnVectors:
 	.word	HardFault_Handler
 	.word	MemManage_Handler
 	.word	BusFault_Handler
-	.word	cpuexc_handler
+	.word	UsageFault_Handler
 	.word	SecureFault_Handler
 	.word	0
 	.word	0
@@ -191,7 +191,7 @@ g_pfnVectors:
 	.word	TIM2_IRQHandler
 	.word	TIM3_IRQHandler
 	.word	TIM4_IRQHandler
-	.word	target_hrt_handler
+	.word	TIM5_IRQHandler
 	.word	TIM6_IRQHandler
 	.word	TIM7_IRQHandler
 	.word	I2C1_EV_IRQHandler
