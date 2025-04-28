@@ -39,3 +39,7 @@ Visual Studio Code の「実行とデバッグ」から`Build & Debug Microcontr
 下記のサイトからアップデートツールをダウンロードして、ST-Linkのファームウェアをアップデートしてください。
 
 <https://www.st.com/ja/development-tools/stsw-link007.html>
+
+デバッグが開始し、シリアル モニタで`STMicroelectronics STLink Virtual COM Port`を開くと、下記のように表示されます。
+
+![シリアル モニタ](images/vscode_serial.png)
