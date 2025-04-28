@@ -87,15 +87,5 @@ target_link_libraries(${CMAKE_PROJECT_NAME}
     # Add user defined libraries
 )
 
-# TOPPERS/ASP3 を使うための STM32 Cube MX の設定
-asp3_set_stm32cubemx_options(${CMAKE_PROJECT_NAME})
-
 # TOPPERS/ASP3 のチェックを行う（シンボルがGCされるとエラーになるので省略）
 #asp3_cfg_check(${CMAKE_PROJECT_NAME})
-
-# Execute post-build to print size, generate hex and bin
-add_custom_command(TARGET ${CMAKE_PROJECT_NAME} POST_BUILD
-    COMMAND ${CMAKE_SIZE} $<TARGET_FILE:${CMAKE_PROJECT_NAME}>
-    COMMAND ${CMAKE_OBJCOPY} -O ihex $<TARGET_FILE:${CMAKE_PROJECT_NAME}> ${CMAKE_PROJECT_NAME}.hex
-    COMMAND ${CMAKE_OBJCOPY} -O binary $<TARGET_FILE:${CMAKE_PROJECT_NAME}> ${CMAKE_PROJECT_NAME}.bin
-)
